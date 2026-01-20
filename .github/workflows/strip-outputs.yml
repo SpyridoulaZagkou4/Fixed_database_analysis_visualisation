@@ -1,0 +1,35 @@
+name: Strip Notebook Outputs
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  strip-outputs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install nbstripout
+        run: |
+          pip install nbstripout
+
+      - name: Strip outputs
+        run: |
+          nbstripout --install
+          git ls-files '*.ipynb' -z | xargs -0 nbstripout
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "CI: strip notebook outputs"
+            git push
+          fi
